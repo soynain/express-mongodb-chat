@@ -1,0 +1,8 @@
+{
+    "compilerOptions": {
+      "types": ["node","mocha","mongoose"],
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true,
+      "resolveJsonModule": true
+    }
+  }
