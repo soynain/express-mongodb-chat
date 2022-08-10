@@ -1,7 +1,7 @@
 # MongoDB chat
 
 
-Hi welcome to my repo, here I want to sharp my node js backend skills by doing a chat application but now in Express JS, using Mongo DB,GraphQL and socket.io.
+Hi welcome to my repo, here I want to sharp my node js backend skills by doing a chat application but now in Express JS, using Mongo DB,GraphQL and graphql-ws instead of socket.io.
 
 I think this will be challenging for me because I havent touched express js in a while, It's not dificult either as I've 
 learned some stuff about mongo and I have a clearer understading about how websockets work thanks to my Laravel chat application practice.

@@ -1,5 +1,5 @@
 import { validarContrasena } from '../authpass/SaltPepperModule';
-import { findCredencialControllerByUsername } from '../controllers/FindCredencialesController';
+import { findCredencialControllerByUsername } from './CredencialesController';
 import generarToken from '../auth/token-auth-sign';
 
 const loginController=async (req, res) => {

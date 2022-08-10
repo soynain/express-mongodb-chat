@@ -5,7 +5,7 @@ import loginController from '../controllers/LoginController';
 import routerGraph from './GraphQLRouteAccess';
 import tokenMiddleware from '../middlewares/JwtMiddleware';
 /*This way, I can apply a jwt middleware to the graphqlhttpserver*/
-router.use('/graphql',tokenMiddleware,routerGraph);
+router.use('/graphql',routerGraph);
 //normal Routes
 router.post('/login', loginController);
 
