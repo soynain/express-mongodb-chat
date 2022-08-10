@@ -1,14 +1,11 @@
 import { buildSchema, GraphQLID, GraphQLList, GraphQLNonNull } from "graphql";
 import { graphql, GraphQLSchema, GraphQLObjectType, GraphQLString } from 'graphql';
-import {findUsuarioController} from '../../controllers/FindUsuarioController';
-import {findCredencialController} from "../../controllers/FindCredencialesController";
-import registrarUsuarioController from "../../controllers/UsuarioRegistroController";
-import registrarCredencialesController from "../../controllers/CredencialesRegistroController";
+import {findUsuarioController,registrarUsuarioController} from '../../controllers/UsuarioController';
+import { registrarCredencialesController,findCredencialController } from "../../controllers/CredencialesController";
 import mongoose from "mongoose";
 /*A clearer example of a graphql schema can be found here 
 https://progressivecoder.com/how-to-create-a-graphql-schema-with-graphqljs-and-express/
 documentation for this is pretty scarce*/
-
 const Usuario = new GraphQLObjectType({
     name: "Usuario",
     fields: () => ({

@@ -1,10 +1,8 @@
 import express from 'express';
 import path from 'path';
 //var cookieParser = require('cookie-parser');
-import { graphqlHTTP } from 'express-graphql';
 import morgan from 'morgan';
-import router from './routes/UsuariosRoutes';
-import schema from './graphqlfiles/schemas/schema';
+import router from './routes/UsuariosRoutes'
 const app = express();
 const portVar=3000||process.env.PORT;
 
@@ -19,10 +17,6 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/usuario',router);
-app.use('/graphql',graphqlHTTP({
-    schema:schema,
-    graphiql:true
-}));
 
 app.listen(portVar,()=>{
     console.log('SERVER STARTED IN PORT: ',portVar);
