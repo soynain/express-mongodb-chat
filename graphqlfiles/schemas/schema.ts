@@ -1,8 +1,11 @@
-import { buildSchema, GraphQLID, GraphQLList, GraphQLNonNull } from "graphql";
+import { buildSchema, GraphQLID, GraphQLList, GraphQLNonNull, execute, subscribe, GraphQLInt } from "graphql";
 import { graphql, GraphQLSchema, GraphQLObjectType, GraphQLString } from 'graphql';
 import { findUsuarioController, registrarUsuarioController } from '../../controllers/UsuarioController';
 import { registrarCredencialesController, findCredencialController } from "../../controllers/CredencialesController";
+import pubsub from "../resolvers/resolver";
 import mongoose from "mongoose";
+
+const PRUEBA_SUBSCRIPCION = 'PRUEBA_SUBSCRIPCION';
 
 /*A clearer example of a graphql schema can be found here 
 https://progressivecoder.com/how-to-create-a-graphql-schema-with-graphqljs-and-express/
@@ -74,8 +77,11 @@ const rootMutation = new GraphQLObjectType({
                 apellido_materno: { type: new GraphQLNonNull(GraphQLString) },
                 fecha_nac: { type: new GraphQLNonNull(GraphQLString) }
             },
-            resolve(parent, args) {
-                return registrarUsuarioController(args);
+            async resolve(parent, args) {
+                let sendObjectThroughSocket = await registrarUsuarioController(args);
+                console.log({ ...sendObjectThroughSocket });
+                //   await pubsub.publish(PRUEBA_SUBSCRIPCION,{nuevoUsuario:{nombres:sendObjectThroughSocket.nombres}});
+                return sendObjectThroughSocket;
             }
         },
         registrarCredenciales: {
@@ -93,17 +99,21 @@ const rootMutation = new GraphQLObjectType({
 });
 
 const subscriptionPrueba = new GraphQLObjectType({
-    name: 'pruebasubscripcion',
+    name: 'Subscription',
     fields: {
-        greetings: {
-            type: GraphQLString,
-            subscribe: async function* () {
-                for (const hi of ['Hi', 'Bonjour', 'Hola', 'Ciao', 'Zdravo']) {
-                    yield { greetings: hi };
+        countdown: {
+            type: GraphQLInt,
+            args:{from:{type:GraphQLInt}},
+            subscribe: async function* (parent,args) {
+            //    console.log(args.from)
+                for (let i = args.from; i >= 0; i--) {
+                    await new Promise((resolve) => setTimeout(resolve, 1000))
+                    yield { countdown: i }
                 }
             }
         }
     }
 });
 
-export default new GraphQLSchema({ query: rootQuery, mutation: rootMutation,subscription:subscriptionPrueba });
+export default new GraphQLSchema({ query: rootQuery, mutation: rootMutation, subscription:subscriptionPrueba });
+export { execute, subscribe }
