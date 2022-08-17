@@ -2,7 +2,7 @@ import { buildSchema, GraphQLID, GraphQLList, GraphQLNonNull, execute, subscribe
 import { graphql, GraphQLSchema, GraphQLObjectType, GraphQLString } from 'graphql';
 import { findUsuarioController, registrarUsuarioController } from '../../controllers/UsuarioController';
 import { registrarCredencialesController, findCredencialController } from "../../controllers/CredencialesController";
-import pubsub from "../resolvers/resolver";
+import pubsub from "../resolvers/SSEHandler";
 import mongoose from "mongoose";
 
 const PRUEBA_SUBSCRIPCION = 'PRUEBA_SUBSCRIPCION';
@@ -50,15 +50,18 @@ const rootQuery = new GraphQLObjectType({
         findUsuario: {
             type: Usuario,
             args: { _id: { type: GraphQLID } },
-            resolve(parent, args) {
-                return findUsuarioController(args._id);
+            async resolve(parent, args) {
+                const prueba= await findUsuarioController(args._id);
+                console.log(prueba)
+                await pubsub.publish('CACA', {countdown:prueba})
+                return prueba;
             }
         },
         findCredenciales: {
             type: Credenciales,
             args: { usuario_fk: { type: GraphQLString } },
-            resolve(parent, args) {
-                return findCredencialController(args.usuario_fk)
+            async resolve(parent, args) {
+                return findCredencialController(args.usuario_fk)                
             }
         }
     })
@@ -102,15 +105,16 @@ const subscriptionPrueba = new GraphQLObjectType({
     name: 'Subscription',
     fields: {
         countdown: {
-            type: GraphQLInt,
-            args:{from:{type:GraphQLInt}},
-            subscribe: async function* (parent,args) {
+            type: Usuario,
+          //  args:{from:{type:GraphQLInt}},
+            subscribe:async()=> /*async function* (parent,args) {
             //    console.log(args.from)
                 for (let i = args.from; i >= 0; i--) {
                     await new Promise((resolve) => setTimeout(resolve, 1000))
                     yield { countdown: i }
                 }
-            }
+            }*/
+            await pubsub.asyncIterator(['CACA'])
         }
     }
 });
