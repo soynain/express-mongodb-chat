@@ -1,7 +1,9 @@
 import { Schema, model, createConnection } from 'mongoose';
 import usuarioSchema from '../models/Usuario';
 import credencialesSchema from '../models/Credenciales';
+import solicitudesAmistadSchema from '../models/SolicitudesAmistad';
 const conn = createConnection('mongodb://127.0.0.1:27017/mongodbchat');
+
 /*I didn't get to work the pluralize function, that detail about the s concat
 sucks ass in mongoose, makes u lose time debugging.
 
@@ -14,6 +16,7 @@ and you just get the name you set in your original schema
 usuario =>usuario
 */
 conn.model('usuario', usuarioSchema, 'usuario');
-conn.model('credenciales', credencialesSchema, 'credenciales')
+conn.model('credenciales', credencialesSchema, 'credenciales');
+conn.model('solicitudes_amistad',solicitudesAmistadSchema,'solicitudes_amistad');
 
 export default conn;

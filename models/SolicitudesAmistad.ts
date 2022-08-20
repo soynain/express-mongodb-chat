@@ -12,7 +12,7 @@ interface SolicitudesAmistadTypes{
     fecha_accion:Date
 };
 
-const solicitudesAmistad=new Schema({
+const solicitudesAmistadSchema=new Schema({
     emisor_usuario_fk:{type:Schema.Types.ObjectId,required:true,ref:'usuario'},
     destinatario_usuario_fk:{type:Schema.Types.ObjectId,required:true,ref:'usuario'},
     status:{Type:StatusOptions,required:true},
@@ -20,7 +20,7 @@ const solicitudesAmistad=new Schema({
     fecha_accion:{type:Date,required:true}
 });
 
-solicitudesAmistad.path('_id');
+solicitudesAmistadSchema.path('_id');
 
-export default solicitudesAmistad;
-export {SolicitudesAmistadTypes};
+export default solicitudesAmistadSchema;
+export {SolicitudesAmistadTypes,StatusOptions};

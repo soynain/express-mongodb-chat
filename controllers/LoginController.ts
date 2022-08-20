@@ -11,7 +11,8 @@ const loginController=async (req, res) => {
             try {
                 let token = await generarToken({usuario,'usuario_id':credencialesEncontradas.id});
                 return res.header('access-token',token).json({
-                    data:{token}
+                    data:{token},
+                    usuario_id:credencialesEncontradas.id
                 });
             } catch (JsonWebTokenError) {
                 console.log(JsonWebTokenError);

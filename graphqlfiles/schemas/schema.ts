@@ -1,11 +1,10 @@
-import { buildSchema, GraphQLID, GraphQLList, GraphQLNonNull, execute, subscribe, GraphQLInt } from "graphql";
+import { GraphQLID, GraphQLList, GraphQLNonNull, execute, subscribe, GraphQLInt } from "graphql";
 import { graphql, GraphQLSchema, GraphQLObjectType, GraphQLString } from 'graphql';
 import { findUsuarioController, registrarUsuarioController } from '../../controllers/UsuarioController';
 import { registrarCredencialesController, findCredencialController } from "../../controllers/CredencialesController";
+import { findAmigosAceptadosOfUserId,findSolicitudesEnviadasOfUserId } from "../../controllers/SolicitudesAmistadController";
 import pubsub from "../resolvers/SSEHandler";
 import mongoose from "mongoose";
-
-const PRUEBA_SUBSCRIPCION = 'PRUEBA_SUBSCRIPCION';
 
 /*A clearer example of a graphql schema can be found here 
 https://progressivecoder.com/how-to-create-a-graphql-schema-with-graphqljs-and-express/
@@ -26,8 +25,8 @@ const Usuario = new GraphQLObjectType({
 
         user_credentials: {
             type: Credenciales,
-            resolve(parent, args) {
-                return findCredencialController(mongoose.Types.ObjectId.createFromHexString(parent.id))
+            async resolve(parent, args) {
+                return await findCredencialController(mongoose.Types.ObjectId.createFromHexString(parent.id))
             }
         }
     })
@@ -43,25 +42,48 @@ const Credenciales = new GraphQLObjectType({
     })
 });
 
+const SolicitudesAmistad=new GraphQLObjectType({
+    name:"Solicitudes_Amistad",
+    fields:()=>({
+        _id:{type:GraphQLID},
+        emisor_usuario_fk:{type:GraphQLString},
+        destinatario_usuario_fk:{type:GraphQLString},
+        status:{type:GraphQLString},
+        fecha_envio:{type:GraphQLString},
+        fecha_accion:{type:GraphQLString}
+    })
+});
+
 /*In this section, query's will be defined*/
 const rootQuery = new GraphQLObjectType({
-    name: "root",
+    name: "query",
     fields: () => ({
         findUsuario: {
             type: Usuario,
             args: { _id: { type: GraphQLID } },
             async resolve(parent, args) {
-                const prueba= await findUsuarioController(args._id);
-                console.log(prueba)
-                await pubsub.publish('CACA', {countdown:prueba})
-                return prueba;
+                return await findUsuarioController(args._id);
             }
         },
         findCredenciales: {
             type: Credenciales,
             args: { usuario_fk: { type: GraphQLString } },
             async resolve(parent, args) {
-                return findCredencialController(args.usuario_fk)                
+                return await findCredencialController(args.usuario_fk)                
+            }
+        },
+        findAmigosUsuario:{
+            type:SolicitudesAmistad,
+            args:{_id:{type:GraphQLString}},
+            async resolve(parent,args){
+                return await findAmigosAceptadosOfUserId(args._id);
+            }
+        },
+        findSolicitudesPendientes:{
+            type:SolicitudesAmistad,
+            args:{_id:{type:GraphQLString}},
+            async resolve(parent,args){
+                return await findSolicitudesEnviadasOfUserId(args._id);
             }
         }
     })
@@ -104,18 +126,7 @@ const rootMutation = new GraphQLObjectType({
 const subscriptionPrueba = new GraphQLObjectType({
     name: 'Subscription',
     fields: {
-        countdown: {
-            type: Usuario,
-          //  args:{from:{type:GraphQLInt}},
-            subscribe:async()=> /*async function* (parent,args) {
-            //    console.log(args.from)
-                for (let i = args.from; i >= 0; i--) {
-                    await new Promise((resolve) => setTimeout(resolve, 1000))
-                    yield { countdown: i }
-                }
-            }*/
-            await pubsub.asyncIterator(['CACA'])
-        }
+        
     }
 });
 

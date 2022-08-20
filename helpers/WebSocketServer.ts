@@ -4,7 +4,7 @@ import { execute, subscribe } from '../graphqlfiles/schemas/schema';
 import {WebSocketServer} from 'ws';
 const wsServer = new WebSocketServer({
     port: 4000,
-    path: '/graphql',
+    path: '/usuario/subscriptions/graphql',
 });
 const graphQlSubscriptionServer=useServer(
     {
