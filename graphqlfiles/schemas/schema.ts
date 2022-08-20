@@ -2,7 +2,7 @@ import { GraphQLID, GraphQLList, GraphQLNonNull, execute, subscribe, GraphQLInt 
 import { graphql, GraphQLSchema, GraphQLObjectType, GraphQLString } from 'graphql';
 import { findUsuarioController, registrarUsuarioController } from '../../controllers/UsuarioController';
 import { registrarCredencialesController, findCredencialController } from "../../controllers/CredencialesController";
-import { findAmigosAceptadosOfUserId,findSolicitudesEnviadasOfUserId } from "../../controllers/SolicitudesAmistadController";
+import { findAmigosAceptadosOfUserId, findSolicitudesEnviadasOfUserId, enviarSolicitudAmistad } from "../../controllers/SolicitudesAmistadController";
 import pubsub from "../resolvers/SSEHandler";
 import mongoose from "mongoose";
 
@@ -42,15 +42,15 @@ const Credenciales = new GraphQLObjectType({
     })
 });
 
-const SolicitudesAmistad=new GraphQLObjectType({
-    name:"Solicitudes_Amistad",
-    fields:()=>({
-        _id:{type:GraphQLID},
-        emisor_usuario_fk:{type:GraphQLString},
-        destinatario_usuario_fk:{type:GraphQLString},
-        status:{type:GraphQLString},
-        fecha_envio:{type:GraphQLString},
-        fecha_accion:{type:GraphQLString}
+const SolicitudesAmistad = new GraphQLObjectType({
+    name: "Solicitudes_Amistad",
+    fields: () => ({
+        _id: { type: GraphQLID },
+        emisor_usuario_fk: { type: GraphQLString },
+        destinatario_usuario_fk: { type: GraphQLString },
+        status: { type: GraphQLString },
+        fecha_envio: { type: GraphQLString },
+        fecha_accion: { type: GraphQLString }
     })
 });
 
@@ -69,20 +69,20 @@ const rootQuery = new GraphQLObjectType({
             type: Credenciales,
             args: { usuario_fk: { type: GraphQLString } },
             async resolve(parent, args) {
-                return await findCredencialController(args.usuario_fk)                
+                return await findCredencialController(args.usuario_fk)
             }
         },
-        findAmigosUsuario:{
-            type:SolicitudesAmistad,
-            args:{_id:{type:GraphQLString}},
-            async resolve(parent,args){
+        findAmigosUsuario: {
+            type: SolicitudesAmistad,
+            args: { _id: { type: GraphQLString } },
+            async resolve(parent, args) {
                 return await findAmigosAceptadosOfUserId(args._id);
             }
         },
-        findSolicitudesPendientes:{
-            type:SolicitudesAmistad,
-            args:{_id:{type:GraphQLString}},
-            async resolve(parent,args){
+        findSolicitudesPendientes: {
+            type: SolicitudesAmistad,
+            args: { _id: { type: GraphQLString } },
+            async resolve(parent, args) {
                 return await findSolicitudesEnviadasOfUserId(args._id);
             }
         }
@@ -103,10 +103,7 @@ const rootMutation = new GraphQLObjectType({
                 fecha_nac: { type: new GraphQLNonNull(GraphQLString) }
             },
             async resolve(parent, args) {
-                let sendObjectThroughSocket = await registrarUsuarioController(args);
-                console.log({ ...sendObjectThroughSocket });
-                //   await pubsub.publish(PRUEBA_SUBSCRIPCION,{nuevoUsuario:{nombres:sendObjectThroughSocket.nombres}});
-                return sendObjectThroughSocket;
+                return await registrarUsuarioController(args);
             }
         },
         registrarCredenciales: {
@@ -116,8 +113,20 @@ const rootMutation = new GraphQLObjectType({
                 usuario: { type: new GraphQLNonNull(GraphQLString) },
                 contrasena: { type: new GraphQLNonNull(GraphQLString) }
             },
-            resolve(parent, args) {
-                return registrarCredencialesController(args);
+            async resolve(parent, args) {
+                return await registrarCredencialesController(args);
+            }
+        },
+        enviarSolicitudAmistad: {
+            type: SolicitudesAmistad,
+            args: {
+                emisor_usuario_fk: { type: new GraphQLNonNull(GraphQLString) },
+                destinatario_usuario_fk: { type: new GraphQLNonNull(GraphQLString) },
+                status: { type: new GraphQLNonNull(GraphQLString) }
+            },
+            async resolve(parent, args) {
+                let solicitudEnviada = await enviarSolicitudAmistad(args);
+                return solicitudEnviada;
             }
         }
     }
@@ -126,9 +135,9 @@ const rootMutation = new GraphQLObjectType({
 const subscriptionPrueba = new GraphQLObjectType({
     name: 'Subscription',
     fields: {
-        
+
     }
 });
 
-export default new GraphQLSchema({ query: rootQuery, mutation: rootMutation, subscription:subscriptionPrueba });
+export default new GraphQLSchema({ query: rootQuery, mutation: rootMutation, subscription: subscriptionPrueba });
 export { execute, subscribe }

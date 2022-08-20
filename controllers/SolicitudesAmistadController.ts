@@ -14,4 +14,15 @@ const findSolicitudesEnviadasOfUserId=async(idUsuario)=>{
     return solicitudesPendientes;
 }
 
-export {findAmigosAceptadosOfUserId,findSolicitudesEnviadasOfUserId};
+const enviarSolicitudAmistad=async(args)=>{
+    let SolicitudesAmistad=conn.model<SolicitudesAmistadTypes>('solicitudes_amistad');
+    let solicitudEnviada=await SolicitudesAmistad.create({
+        emisor_usuario_fk:args.emisor_usuario_fk,
+        destinatario_usuario_fk:args.destinatario_usuario_fk,
+        status:args.status,
+        fecha_envio:new Date()
+    });
+    return solicitudEnviada;
+}
+
+export {findAmigosAceptadosOfUserId,findSolicitudesEnviadasOfUserId,enviarSolicitudAmistad};
