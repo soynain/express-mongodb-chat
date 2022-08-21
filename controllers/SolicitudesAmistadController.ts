@@ -20,7 +20,8 @@ const enviarSolicitudAmistad=async(args)=>{
         emisor_usuario_fk:args.emisor_usuario_fk,
         destinatario_usuario_fk:args.destinatario_usuario_fk,
         status:args.status,
-        fecha_envio:new Date()
+        fecha_envio:new Date(),
+        fk_conjunto_solicitudes_amistad:args.fk_conjunto
     });
     return solicitudEnviada;
 }

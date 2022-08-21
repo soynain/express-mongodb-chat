@@ -1,8 +1,10 @@
-import { GraphQLID, GraphQLList, GraphQLNonNull, execute, subscribe, GraphQLInt } from "graphql";
+import { GraphQLID, GraphQLList, GraphQLNonNull, execute, subscribe, GraphQLInt, GraphQLBoolean } from "graphql";
 import { graphql, GraphQLSchema, GraphQLObjectType, GraphQLString } from 'graphql';
 import { findUsuarioController, registrarUsuarioController } from '../../controllers/UsuarioController';
 import { registrarCredencialesController, findCredencialController } from "../../controllers/CredencialesController";
 import { findAmigosAceptadosOfUserId, findSolicitudesEnviadasOfUserId, enviarSolicitudAmistad } from "../../controllers/SolicitudesAmistadController";
+import { enviarMensajes } from "../../controllers/MensajesController";
+//import { findConjuntoSolicitudesIdForUser } from "../../controllers/ConjuntoSolicitudesAmistadController";
 import pubsub from "../resolvers/SSEHandler";
 import mongoose from "mongoose";
 
@@ -23,12 +25,12 @@ const Usuario = new GraphQLObjectType({
         https://www.fullstacklabs.co/blog/express-graphql-server
         this website was REALLY HELPFUL */
 
-        user_credentials: {
-            type: Credenciales,
-            async resolve(parent, args) {
-                return await findCredencialController(mongoose.Types.ObjectId.createFromHexString(parent.id))
+        /*solicitudes_amistad_grupo_id:{
+            type:conjuntoSolicitudesAmistad,
+            async resolve(parent,args){
+                return await findConjuntoSolicitudesIdForUser(mongoose.Types.ObjectId.createFromHexString(parent.id));
             }
-        }
+        }*/
     })
 });
 
@@ -53,6 +55,34 @@ const SolicitudesAmistad = new GraphQLObjectType({
         fecha_accion: { type: GraphQLString }
     })
 });
+
+const chat_salas = new GraphQLObjectType({
+    name: "chat_salas",
+    fields: () => ({
+        _id: { type: GraphQLID },
+        amigos_fk: { type: GraphQLString }
+    })
+});
+
+const mensajes = new GraphQLObjectType({
+    name: "mensajes",
+    fields: () => ({
+        sala_fk: { type: GraphQLString },
+        mensaje: { type: GraphQLString },
+        fecha_envio: { type: GraphQLString },
+        visto: { type: GraphQLBoolean },
+        fecha_visto: { type: GraphQLString },
+        emisor_usuario_fk: { type: GraphQLString },
+        destinatario_usuario_fk: { type: GraphQLString }
+    })
+});
+/*const conjuntoSolicitudesAmistad=new GraphQLObjectType({
+    name:"conjunto_solicitudes_amistad",
+    fields:()=>({
+        _id:{type:GraphQLID},
+        usuario_fk:{type:GraphQLString}
+    })
+});*/
 
 /*In this section, query's will be defined*/
 const rootQuery = new GraphQLObjectType({
@@ -122,11 +152,31 @@ const rootMutation = new GraphQLObjectType({
             args: {
                 emisor_usuario_fk: { type: new GraphQLNonNull(GraphQLString) },
                 destinatario_usuario_fk: { type: new GraphQLNonNull(GraphQLString) },
-                status: { type: new GraphQLNonNull(GraphQLString) }
+                status: { type: new GraphQLNonNull(GraphQLString) },
+                fk_conjunto: { type: new GraphQLNonNull(GraphQLString) }
             },
             async resolve(parent, args) {
                 let solicitudEnviada = await enviarSolicitudAmistad(args);
+                await pubsub.publish(
+                    solicitudEnviada.destinatario_usuario_fk.toString(),
+                    {
+                        listenForSolicitudesAmistad: solicitudEnviada
+                    });
                 return solicitudEnviada;
+            }
+        },
+        enviarMensajes:{
+            type:mensajes,
+            args:{
+                sala_fk:{type:new GraphQLNonNull(GraphQLString)},
+                mensaje:{type:new GraphQLNonNull(GraphQLString)},
+                emisor_usuario_fk:{type:new GraphQLNonNull(GraphQLString)},
+                destinatario_usuario_fk:{type:new GraphQLNonNull(GraphQLString)}
+            },
+            async resolve(parent,args){
+                let mensajeEnviadoBroadcast=await enviarMensajes(args);
+                await pubsub.publish(args.destinatario_usuario_fk, {recibirMensajes:mensajeEnviadoBroadcast});
+                return mensajeEnviadoBroadcast;
             }
         }
     }
@@ -135,7 +185,24 @@ const rootMutation = new GraphQLObjectType({
 const subscriptionPrueba = new GraphQLObjectType({
     name: 'Subscription',
     fields: {
-
+        listenForSolicitudesAmistad: {
+            type: SolicitudesAmistad,
+            args: {
+                MyUserId: { type: new GraphQLNonNull(GraphQLString) }
+            },
+            subscribe: async (parent, args) => {
+                await pubsub.asyncIterator(args.MyUserId)
+            }
+        },
+        recibirMensajes: {
+            type: mensajes,
+            args: {
+                sala_id: { type: GraphQLString },
+            },
+            subscribe: async (parent, args) => {
+                await pubsub.asyncIterator(args.sala_id);
+            }
+        }
     }
 });
 

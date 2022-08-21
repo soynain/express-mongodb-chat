@@ -15,7 +15,7 @@ const mensajesSchema=new Schema<MensajesTypes>({
     mensaje:{type:String,required:true},
     fecha_envio:{type:Date,required:true},
     visto:{type:Boolean,required:true},
-    fecha_visto:{type:Date,required:true},
+    fecha_visto:{type:Date,required:false},
     emisor_usuario_fk:{type:Schema.Types.ObjectId,required:false,ref:'usuario'},
     destinatario_usuario_fk:{type:Schema.Types.ObjectId,required:false,ref:'usuario'}
 });
