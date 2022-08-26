@@ -3,7 +3,7 @@ import { graphql, GraphQLSchema, GraphQLObjectType, GraphQLString } from 'graphq
 import { findUsuarioController, registrarUsuarioController } from '../../controllers/UsuarioController';
 import { registrarCredencialesController, findCredencialController } from "../../controllers/CredencialesController";
 import { findAmigosAceptadosOfUserId, findSolicitudesEnviadasOfUserId, enviarSolicitudAmistad } from "../../controllers/SolicitudesAmistadController";
-import { enviarMensajes } from "../../controllers/MensajesController";
+import { enviarMensajes, findMensajesBetweenFriends } from "../../controllers/MensajesController";
 //import { findConjuntoSolicitudesIdForUser } from "../../controllers/ConjuntoSolicitudesAmistadController";
 import pubsub from "../resolvers/SSEHandler";
 import mongoose from "mongoose";
@@ -45,14 +45,21 @@ const Credenciales = new GraphQLObjectType({
 });
 
 const SolicitudesAmistad = new GraphQLObjectType({
-    name: "Solicitudes_Amistad",
+    name: "SolicitudesAmistad",
     fields: () => ({
         _id: { type: GraphQLID },
         emisor_usuario_fk: { type: GraphQLString },
         destinatario_usuario_fk: { type: GraphQLString },
         status: { type: GraphQLString },
         fecha_envio: { type: GraphQLString },
-        fecha_accion: { type: GraphQLString }
+        fecha_accion: { type: GraphQLString },
+        nombres_usuario: {
+            type: Credenciales,
+            async resolve(parent, args) {
+                //console.log(parent);
+                return await findCredencialController(parent.emisor_usuario_fk);
+            }
+        }
     })
 });
 
@@ -67,6 +74,7 @@ const chat_salas = new GraphQLObjectType({
 const mensajes = new GraphQLObjectType({
     name: "mensajes",
     fields: () => ({
+        _id: { type: GraphQLID },
         sala_fk: { type: GraphQLString },
         mensaje: { type: GraphQLString },
         fecha_envio: { type: GraphQLString },
@@ -103,17 +111,30 @@ const rootQuery = new GraphQLObjectType({
             }
         },
         findAmigosUsuario: {
-            type: SolicitudesAmistad,
-            args: { _id: { type: GraphQLString } },
+            type: new GraphQLList(SolicitudesAmistad),
+            args: {
+                emisor_usuario_fk: { type: GraphQLString },
+                status: { type: GraphQLString }
+            },
             async resolve(parent, args) {
-                return await findAmigosAceptadosOfUserId(args._id);
+                return await findAmigosAceptadosOfUserId(args.emisor_usuario_fk);
             }
         },
         findSolicitudesPendientes: {
-            type: SolicitudesAmistad,
+            type: new GraphQLList(SolicitudesAmistad),
             args: { _id: { type: GraphQLString } },
             async resolve(parent, args) {
                 return await findSolicitudesEnviadasOfUserId(args._id);
+            }
+        },
+        findPrivateMensajes: {
+            type: new GraphQLList(mensajes),
+            args: {
+                emisor_usuario_fk: { type: GraphQLString },
+                destinatario_usuario_fk: { type: GraphQLString }
+            },
+            async resolve(parent, args) {
+                return await findMensajesBetweenFriends(args);
             }
         }
     })
@@ -165,17 +186,17 @@ const rootMutation = new GraphQLObjectType({
                 return solicitudEnviada;
             }
         },
-        enviarMensajes:{
-            type:mensajes,
-            args:{
-                sala_fk:{type:new GraphQLNonNull(GraphQLString)},
-                mensaje:{type:new GraphQLNonNull(GraphQLString)},
-                emisor_usuario_fk:{type:new GraphQLNonNull(GraphQLString)},
-                destinatario_usuario_fk:{type:new GraphQLNonNull(GraphQLString)}
+        enviarMensajes: {
+            type: mensajes,
+            args: {
+                sala_fk: { type: new GraphQLNonNull(GraphQLString) },
+                mensaje: { type: new GraphQLNonNull(GraphQLString) },
+                emisor_usuario_fk: { type: new GraphQLNonNull(GraphQLString) },
+                destinatario_usuario_fk: { type: new GraphQLNonNull(GraphQLString) }
             },
-            async resolve(parent,args){
-                let mensajeEnviadoBroadcast=await enviarMensajes(args);
-                await pubsub.publish(args.destinatario_usuario_fk, {recibirMensajes:mensajeEnviadoBroadcast});
+            async resolve(parent, args) {
+                let mensajeEnviadoBroadcast = await enviarMensajes(args);
+                await pubsub.publish(args.sala_fk, { recibirMensajes: mensajeEnviadoBroadcast });
                 return mensajeEnviadoBroadcast;
             }
         }

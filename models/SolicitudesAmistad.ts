@@ -9,17 +9,15 @@ interface SolicitudesAmistadTypes {
     destinatario_usuario_fk: Types.ObjectId,
     status: StatusOptions.EN_ESPERA | StatusOptions.ACEPTADO,
     fecha_envio: Date,
-    fecha_accion: Date,
-    fk_conjunto_solicitudes_amistad: Types.ObjectId
+    fecha_accion: Date
 };
 
 const solicitudesAmistadSchema = new Schema({
     emisor_usuario_fk: { type: Schema.Types.ObjectId, required: true, ref: 'usuario' },
     destinatario_usuario_fk: { type: Schema.Types.ObjectId, required: true, ref: 'usuario' },
-    status: { Type: StatusOptions, required: true },
-    fecha_envio: { type: Date, required: true },
-    fecha_accion: { type: Date, required: false },
-    fk_conjunto_solicitudes_amistad: { type: Schema.Types.ObjectId, required: false, ref: 'conjunto_solicitudes_amistad' }
+    status: { type: String,required:true },
+    fecha_envio: { type: Schema.Types.Date, required: true },
+    fecha_accion: { type: Schema.Types.Date, required: false }
 });
 
 solicitudesAmistadSchema.path('_id');

@@ -1,6 +1,7 @@
 import { validarContrasena } from '../authpass/SaltPepperModule';
 import { findCredencialControllerByUsername } from './CredencialesController';
 import generarToken from '../auth/token-auth-sign';
+import express from'express';
 
 const loginController=async (req, res) => {
     const { usuario, contrasena } = req.body;
@@ -12,7 +13,7 @@ const loginController=async (req, res) => {
                 let token = await generarToken({usuario,'usuario_id':credencialesEncontradas.id});
                 return res.header('access-token',token).json({
                     data:{token},
-                    usuario_id:credencialesEncontradas.id
+                    usuario_id:credencialesEncontradas.usuario_fk
                 });
             } catch (JsonWebTokenError) {
                 console.log(JsonWebTokenError);
