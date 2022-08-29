@@ -1,5 +1,6 @@
 import conn from '../repositories/MongoDBConnection';
 import { CredencialesTypes } from '../models/Credenciales';
+import mongoose from 'mongoose';
 
 const registrarCredencialesController = async (credenciales) => {
     let Credenciales = conn.model<CredencialesTypes>('credenciales');
@@ -11,9 +12,15 @@ const registrarCredencialesController = async (credenciales) => {
     return credencialCreada;
 }
 
-const findCredencialController = async (usuario_fk) => {
+const findCredencialController = async (id_cliente, emisor_usuario_fk, destinatario_usuario_fk) => {
+    if (mongoose.Types.ObjectId.createFromHexString(id_cliente).equals(destinatario_usuario_fk)) {
+        let Credenciales = conn.model<CredencialesTypes>('credenciales');
+        let credencialEncontrada = await Credenciales.findOne({ usuario_fk: emisor_usuario_fk });
+        return credencialEncontrada;
+    }
+    
     let Credenciales = conn.model<CredencialesTypes>('credenciales');
-    let credencialEncontrada = await Credenciales.findOne({ usuario_fk: usuario_fk });
+    let credencialEncontrada = await Credenciales.findOne({ usuario_fk: destinatario_usuario_fk });
     return credencialEncontrada;
 }
 
@@ -23,8 +30,8 @@ const findCredencialControllerByUsername = async (usuario) => {
     return credencialEncontrada;
 }
 
-export { 
-    registrarCredencialesController, 
-    findCredencialController, 
-    findCredencialControllerByUsername 
+export {
+    registrarCredencialesController,
+    findCredencialController,
+    findCredencialControllerByUsername
 };

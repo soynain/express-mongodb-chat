@@ -2,11 +2,12 @@ import { GraphQLID, GraphQLList, GraphQLNonNull, execute, subscribe, GraphQLInt,
 import { graphql, GraphQLSchema, GraphQLObjectType, GraphQLString } from 'graphql';
 import { findUsuarioController, registrarUsuarioController } from '../../controllers/UsuarioController';
 import { registrarCredencialesController, findCredencialController } from "../../controllers/CredencialesController";
-import { findAmigosAceptadosOfUserId, findSolicitudesEnviadasOfUserId, enviarSolicitudAmistad } from "../../controllers/SolicitudesAmistadController";
+import { findAmigosAceptadosOfUserId, findSolicitudesEnviadasOfUserId, enviarSolicitudAmistad,findFriendshipBetweenTwoUsers } from "../../controllers/SolicitudesAmistadController";
 import { enviarMensajes, findMensajesBetweenFriends } from "../../controllers/MensajesController";
-//import { findConjuntoSolicitudesIdForUser } from "../../controllers/ConjuntoSolicitudesAmistadController";
+import { findSalaChat,crearNuevaSalaChat,dropSalaChat } from "../../controllers/ChatSalasController";
 import pubsub from "../resolvers/SSEHandler";
 import mongoose from "mongoose";
+import { resolve } from "path";
 
 /*A clearer example of a graphql schema can be found here 
 https://progressivecoder.com/how-to-create-a-graphql-schema-with-graphqljs-and-express/
@@ -55,9 +56,17 @@ const SolicitudesAmistad = new GraphQLObjectType({
         fecha_accion: { type: GraphQLString },
         nombres_usuario: {
             type: Credenciales,
+            args: {
+                id_usuario_cliente: { type: GraphQLString }
+            },
             async resolve(parent, args) {
-                //console.log(parent);
-                return await findCredencialController(parent.emisor_usuario_fk);
+                return await findCredencialController(args.id_usuario_cliente,parent.emisor_usuario_fk,parent.destinatario_usuario_fk);
+            }
+        },
+        find_sala_id:{
+            type:chat_salas,
+            async resolve(parent,args){
+                return await findSalaChat(parent._id);
             }
         }
     })
@@ -103,13 +112,6 @@ const rootQuery = new GraphQLObjectType({
                 return await findUsuarioController(args._id);
             }
         },
-        findCredenciales: {
-            type: Credenciales,
-            args: { usuario_fk: { type: GraphQLString } },
-            async resolve(parent, args) {
-                return await findCredencialController(args.usuario_fk)
-            }
-        },
         findAmigosUsuario: {
             type: new GraphQLList(SolicitudesAmistad),
             args: {
@@ -135,6 +137,16 @@ const rootQuery = new GraphQLObjectType({
             },
             async resolve(parent, args) {
                 return await findMensajesBetweenFriends(args);
+            }
+        },
+        findAmistadParticular:{
+            type:SolicitudesAmistad,
+            args:{
+                emisor_usuario_fk:{type:GraphQLString},
+                destinatario_usuario_fk:{type:GraphQLString}
+            },
+            async resolve(parent, args){
+                return await findFriendshipBetweenTwoUsers(args);
             }
         }
     })
@@ -199,6 +211,24 @@ const rootMutation = new GraphQLObjectType({
                 await pubsub.publish(args.sala_fk, { recibirMensajes: mensajeEnviadoBroadcast });
                 return mensajeEnviadoBroadcast;
             }
+        },
+        crearNuevaSalaDeChat:{
+            type:chat_salas,
+            args:{
+                _id:{type:GraphQLString}
+            },
+            async resolve(parent,args){
+                return await crearNuevaSalaChat(args._id);
+            }
+        },
+        borrarSalaChatId:{
+            type:chat_salas,
+            args:{
+                amigos_fk:{type:GraphQLString}
+            },
+            async resolve(parent,args){
+                return await dropSalaChat(args._id);
+            }
         }
     }
 });
@@ -218,10 +248,10 @@ const subscriptionPrueba = new GraphQLObjectType({
         recibirMensajes: {
             type: mensajes,
             args: {
-                sala_id: { type: GraphQLString },
+                sala_fk: { type: GraphQLString },
             },
             subscribe: async (parent, args) => {
-                await pubsub.asyncIterator(args.sala_id);
+                return await pubsub.asyncIterator(args.sala_fk);
             }
         }
     }

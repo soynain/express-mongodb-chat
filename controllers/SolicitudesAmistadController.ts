@@ -4,7 +4,12 @@ import { StatusOptions } from '../models/SolicitudesAmistad';
 
 const findAmigosAceptadosOfUserId=async(idUsuario)=>{
     let SolicitudesAmistad=conn.model<SolicitudesAmistadTypes>('solicitudes_amistad');
-    let amigosAceptadosEncontrados=await SolicitudesAmistad.find({emisor_usuario_fk:idUsuario,status:StatusOptions.ACEPTADO});
+    let amigosAceptadosEncontrados=await SolicitudesAmistad.find({
+        $or:[
+            {emisor_usuario_fk:idUsuario,status:StatusOptions.ACEPTADO},
+            {destinatario_usuario_fk:idUsuario,status:StatusOptions.ACEPTADO}
+        ]
+    });
     return amigosAceptadosEncontrados;
 }
 
@@ -26,4 +31,20 @@ const enviarSolicitudAmistad=async(args)=>{
     return solicitudEnviada;
 }
 
-export {findAmigosAceptadosOfUserId,findSolicitudesEnviadasOfUserId,enviarSolicitudAmistad};
+const findFriendshipBetweenTwoUsers=async(args)=>{
+    let SolicitudesAmistad=conn.model<SolicitudesAmistadTypes>('solicitudes_amistad');
+    let friendRelationshipFound=await SolicitudesAmistad.findOne({
+        $or:[
+            {emisor_usuario_fk:args.emisor_usuario_fk,destinatario_usuario_fk:args.destinatario_usuario_fk},
+            {emisor_usuario_fk:args.destinatario_usuario_fk,destinatario_usuario_fk:args.emisor_usuario_fk}
+        ]
+    });
+    return friendRelationshipFound;
+}
+
+export {
+    findAmigosAceptadosOfUserId,
+    findSolicitudesEnviadasOfUserId,
+    enviarSolicitudAmistad,
+    findFriendshipBetweenTwoUsers
+};
