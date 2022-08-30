@@ -9,6 +9,7 @@ import pubsub from "../resolvers/SSEHandler";
 import mongoose from "mongoose";
 import { resolve } from "path";
 
+
 /*A clearer example of a graphql schema can be found here 
 https://progressivecoder.com/how-to-create-a-graphql-schema-with-graphqljs-and-express/
 documentation for this is pretty scarce*/
@@ -152,6 +153,10 @@ const rootQuery = new GraphQLObjectType({
     })
 });
 
+async function pivotFunctionForBroadcastingUserId(usuario_id){
+    await pubsub.publish('ONLINE-CONN-DETECTER', {activarStatusOnline:usuario_id});
+}
+
 /*In this section is where mutations will be defined, all operations that 
 envolve modification, deletion and insertion*/
 const rootMutation = new GraphQLObjectType({
@@ -229,6 +234,15 @@ const rootMutation = new GraphQLObjectType({
             async resolve(parent,args){
                 return await dropSalaChat(args._id);
             }
+        },
+        bouncingOnlineConnectionBack:{
+            type:GraphQLString,
+            args:{
+                usuario_id:{type:GraphQLString}
+            },
+            async resolve(parent,args){
+                await pubsub.publish('ONLINE-CONN-DETECTER', {activarStatusOnline:args.usuario_id});
+            }
         }
     }
 });
@@ -252,6 +266,16 @@ const subscriptionPrueba = new GraphQLObjectType({
             },
             subscribe: async (parent, args) => {
                 return await pubsub.asyncIterator(args.sala_fk);
+            }
+        },
+        activarStatusOnline:{
+            type: GraphQLString,
+            args:{
+                usuario_id:{type:GraphQLString}
+            },
+            subscribe:async (parent,args) => { 
+                await pivotFunctionForBroadcastingUserId(args.usuario_id);
+                return await pubsub.asyncIterator('ONLINE-CONN-DETECTER');
             }
         }
     }
