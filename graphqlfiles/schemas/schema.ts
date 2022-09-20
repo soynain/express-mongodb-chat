@@ -94,13 +94,6 @@ const mensajes = new GraphQLObjectType({
         destinatario_usuario_fk: { type: GraphQLString }
     })
 });
-/*const conjuntoSolicitudesAmistad=new GraphQLObjectType({
-    name:"conjunto_solicitudes_amistad",
-    fields:()=>({
-        _id:{type:GraphQLID},
-        usuario_fk:{type:GraphQLString}
-    })
-});*/
 
 /*In this section, query's will be defined*/
 const rootQuery = new GraphQLObjectType({
@@ -233,15 +226,6 @@ const rootMutation = new GraphQLObjectType({
             },
             async resolve(parent,args){
                 return await dropSalaChat(args._id);
-            }
-        },
-        bouncingOnlineConnectionBack:{
-            type:GraphQLString,
-            args:{
-                usuario_id:{type:GraphQLString}
-            },
-            async resolve(parent,args){
-                await pubsub.publish('ONLINE-CONN-DETECTER', {activarStatusOnline:args.usuario_id});
             }
         }
     }
